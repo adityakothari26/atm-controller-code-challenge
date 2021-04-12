@@ -1,4 +1,4 @@
-#include "stdafx.h"
+//#include "stdafx.h"
 #include <iostream>
 #include <string>
 
@@ -19,27 +19,30 @@ using namespace std;
 string AccountType[] = {"", "CHECKINGS", "SAVINGS"};
 string response;
 
-int AccountDetails[] = {
-	1234,		// pin number
+int AccountDetails[10][3] = {
+	{1234,		// pin number
 	100,		// checking account balance
-	600,		// savings account balance
+	600}		// savings account balance
 };
 
 bool isPINValid(int pin) {
-	if (pin == AccountDetails[0]) {
-		return true;
-	} else {
-		return false;
+	for(int i=0; i<10; i++){
+		if (pin == AccountDetails[i][0]) {
+			return true;
+		} else {
+			return false;
+		}
 	}
+	
 }
 
 bool proceed(string response) {
 	if(response =="y" || response == "Y"){
 		return true;
 	} else if(response == "n" || response == "N"){
-		string exit;
+//		string exit;
 		cout << "\n\n\n\t Thank you.";
-		cin >> exit;
+//		cin >> exit;
 		return false;
 	}
 
@@ -49,12 +52,14 @@ class AccountSettings {
 	private:
 		int type;		// account type
 		int balance;	// account balance
+		int user_id;    // user_id
 	public:
 		AccountSettings(ATMMachine_t &ATMMachine) {
 			// type 1 = checkings
 			// type 2 = savings
+			this->user_id = ATMMachine.userID;
 			this->type = ATMMachine.accountType;
-			this->balance = AccountDetails[this->type];
+			this->balance = AccountDetails[this->user_id][this->type];
 		}
 		int getWithdraw() {
 			int withdrawAmount;
@@ -68,7 +73,7 @@ class AccountSettings {
 				cout << "$"<< withdrawAmount << endl;
 				
 				// update the account balance
-				AccountDetails[this->type] = AccountBalance;
+				AccountDetails[this->user_id][this->type] = AccountBalance;
 				getBalance();
 
 			} else {
@@ -87,7 +92,7 @@ class AccountSettings {
 			int AccountBalance = this->balance += depositAmount;
 
 			// update the account balance
-			AccountDetails[this->type] = AccountBalance;
+			AccountDetails[this->user_id][this->type] = AccountBalance;
 
 			cout << "\t$" << depositAmount << " was deposited into your account";
 			getBalance();
@@ -145,18 +150,21 @@ void account(ATMMachine_t &ATMMachine) {
 			default:
 				cout << "Would you like to continue (y/n)\n";
 				cin >> response;
-				proceed(response);
+//				proceed(response);
 			
 				if (proceed(response)) {
 					controllerMenu(ATMMachine); // return to main menu
-				} 
+				}
+				else{
+					return;
+				}
 				break;
 		}
 }
 
 void controllerMenu(ATMMachine_t &ATMMachine) {
 	
-	cout<<"\tAccount Type :: ";
+	cout<<"\tAccount Type :: Enter 1 for Checkings, 2 for Savings";
 	cin>>ATMMachine.accountType;
 	switch(ATMMachine.accountType){
 		case 1: account(ATMMachine); // checkings
@@ -164,6 +172,7 @@ void controllerMenu(ATMMachine_t &ATMMachine) {
 		case 2: account(ATMMachine); // savings
 			break;
 		default:
+			cout << "Invalid response";
 			cout << "Would you like to continue (y/n)\n";
 			cin >> response;
 			proceed(response);
@@ -171,6 +180,9 @@ void controllerMenu(ATMMachine_t &ATMMachine) {
 			if (proceed(response)) {
 				controllerMenu(ATMMachine);
 			} 
+			else{
+				return;
+			}
 			break;
 	}
 }
@@ -183,23 +195,30 @@ int main(){
 	cout<< "Welcome to ATM Controller Program.\nPlease enter your card to proceed."<<endl;
 	
 	cout<<" ATM Machine Inputs:"<<endl;
-	cout<<"\tCard Inserted :: ";
+	cout<<"\tCard Inserted (Enter 1 for Already inserted, 0 for Not) :: ";
 	cin>>ATMMachine.cardInserted;
 	cout<<"\tUser ID :: ";
 	cin>>ATMMachine.userID;
 	
-	if(ATMMachine.cardInserted){
+	if(ATMMachine.cardInserted && ATMMachine.userID<10){
+		int attempts = 0;
 		do {
 			cout<<"\tPIN :: ";
 			cin>>ATMMachine.pin;
 			
 			if(isPINValid(ATMMachine.pin)){
 				controllerMenu(ATMMachine);
+				attempts = 0;
 			}
 			else{
 				cout<<"Please Enter a Valid PIN"<<endl;
+				attempts += 1;
 			}
-		} while(!isPINValid(ATMMachine.pin));
+		} while(!isPINValid(ATMMachine.pin) && attempts<5);
+		cout << "No. of attempts exceeded." << endl;
+	}
+	else{
+		cout << "Account not registered. Bye now" << endl;
 	}	
 	
 	return 0;
